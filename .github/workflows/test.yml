@@ -1,0 +1,63 @@
+name: Tests
+
+on: [push, pull_request]
+  
+
+jobs:
+  test:
+    timeout-minutes: 40
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        nim:
+          - "1.6.0"
+          - "stable"
+          - "devel"
+        gc: 
+          - "refc"
+          - "orc"
+      fail-fast: false
+
+    name: Nim ${{ matrix.nim }} ${{ matrix.gc }}
+    steps:
+    - name: Setup Nim Enviroment
+      uses: actions/checkout@master
+      
+    - name: Cache choosenim
+      id: cache-choosenim
+      uses: actions/cache@v1
+      with:
+        path: ~/.nimble
+        key: ${{ runner.os }}-nimble-${{ matrix.nim }}-${{ hashFiles('slinim.nimble') }}
+        
+    - uses: jiro4989/setup-nim-action@v1
+      with:
+          nim-version: ${{ matrix.nim }}
+          
+    - name: Update nimble
+      run: nimble update
+
+    - name: Install slint dependencies
+      run: |
+        sudo apt update 
+        sudo apt install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools
+
+    - name: Install slint
+      env:
+        SLINT_VERSION: 0.3.0
+      run: |
+        wget https://github.com/slint-ui/slint/releases/download/v$SLINT_VERSION/Slint-cpp-$SLINT_VERSION-Linux-x86_64.tar.gz -O slint.tar.gz
+        tar -xzf slint.tar.gz
+        cd Slint-cpp-$SLINT_VERSION-Linux-x86_64
+        sudo cp -r bin /usr/
+        sudo cp include/slint/* /usr/include/
+        sudo cp -r lib /usr/
+
+    - name: Install binding generator
+      run: nimble install -y
+
+    - name: Run Tests
+      env:
+        QT_QPA_PLATFORM: minimal
+      run: nimble --gc:${{ matrix.gc }} test
+
