@@ -39,3 +39,11 @@ suite "Model":
     var model = newVectorModel[int]()
     model &= 9
     check model.get(0).get() == 9
+
+  test "Making model from array":
+    let model = newVectorModel([1, 2, 3])
+    check:
+      model.len == 3
+      model[0] == 1
+      model[1] == 2
+      model[2] == 3

@@ -132,10 +132,13 @@ func newVectorModel*[T](): VectorModel[T] {.slintHeader, importcpp: "std::make_s
   ## Initialises a new model
 
 func len*(model: Model | VectorModel): cint {.slintHeader, importcpp: "#->row_count()".}
+  ## Returns the number of items in the model
+  
 func rawget[T](model: Model[T] | VectorModel[T], i: cint): Optional[T] {.slintHeader, importcpp: "#->row_data(@)".}
 
 func get*[T](model: Model[T] | VectorModel[T]; i: cint): Option[T] =
   ## Gets the item from the model at index `i`. If it doesn't exist then returns `none(T)`
+  # Converts from C++ Optional[T] to Nim Option[T]
   var item = model.rawget(i)
   if item.isSome:
     result = some item.get()
@@ -145,4 +148,31 @@ func `[]`*[T](model: Model[T] | VectorModel[T], i: cint): T =
   rangeCheck i < model.len
   result = model.rawget(i).get()
 
+func `[]=`*[T](model: var Model[T] | var VectorModel[T], i: cint, item: T) {.slintHeader, importcpp: "#->set_row_data(@)".}
+  ## Sets the item at index `i` to `item`
+
+func delete*(model: var VectorModel, i: cint) {.slintHeader, importcpp: "#->erase(@)".}
+  ## Deletes the item at index `i`. Shares same semantics as Nim's `delete`
+
+func insert*[T](model: var VectorModel[T], i: csize_t, item: T) {.slintHeader, importcpp: "#->insert(@)".}
+
 func add*[T](model: var VectorModel[T], item: T) {.slintHeader, importcpp: "#->push_back(@)".}
+  ## Adds an item to the model
+
+func newVectorModel*[T](items: openArray[T]): VectorModel[T] =
+  ## Initialises a new model from existing items.
+  # This adds items individually. I was unable to bind to the vector constructor the c code uses
+  result = newVectorModel[T]()
+  for item in items:
+    result &= item
+
+iterator items*[T](model: Model[T]): T =
+  ## Iterates through items in the model
+  for i in 0..<model.len:
+    yield model[i]
+
+func contains*[T](model: Model[T], looking: T): bool =
+  ## Returns true if item appears in the model
+  for item in model:
+    if item == looking:
+      return true

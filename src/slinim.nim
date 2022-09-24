@@ -4,11 +4,6 @@ import slinim/[
   generator
 ]
 
-import std/[
-  strformat,
-  os
-]
-
 # Slint requires modern compilier and for slint to be linked
 {.passC: "-std=c++20".}
 {.passL: "-lslint_cpp".}
