@@ -140,7 +140,7 @@ func get*[T](model: Model[T] | VectorModel[T]; i: cint): Option[T] =
   if item.isSome:
     result = some item.get()
     
-func `[]`*[T](model: Model[T], i: cint): T =
+func `[]`*[T](model: Model[T] | VectorModel[T], i: cint): T =
   ## Gets the item from the moedl at index `i`. Throws index defect if out of range
   rangeCheck i < model.len
   result = model.rawget(i).get()
