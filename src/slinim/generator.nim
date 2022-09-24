@@ -104,22 +104,15 @@ proc create*(x: typedesc[{mainClass}]): {mainClassComp} {{.importcpp: "'*0::crea
   for callback in info.root.callbacks:
     callback.generate(result)
 
-template importSlint*(slint: static[string], module: untyped): untyped =
+macro importSlint*(slint: static[string]): untyped =
   ## Generates the Nim bindings and imports them.
   ## 
   ## * **module**: Name to give to the nim module
-  import os
-  import macros
-  static:
-    const (path, fileName, ext) = slint.splitFile()
-    const
-      nimPath = getProjectPath() / fileName & ".nim"
-      headerPath = getProjectPath() / fileName & ".h"
-      slintPath = getProjectPath() / slint
-    static:
-      echo nimPath
-      echo headerPath
-    {.hint: "Building Nim bindings...".}
-    echo staticExec(fmt"slinim " & slintPath & " " & nimPath)
-
-  import module
+  let (path, fileName, ext) = slint.splitFile()
+  let
+    headerPath = getProjectPath() / fileName & ".h"
+    slintPath = getProjectPath() / slint
+  {.hint: "Building Nim bindings...".}
+  let modulePath = staticExec(fmt"slinim " & slintPath & " tmp")
+  result = quote do:
+    import `modulePath`

@@ -3,7 +3,7 @@ import std/[
   unittest,
   tables
 ]
-importSlint("todo.slint", todo)
+importSlint("todo.slint")
 # import todo
 test "Making todo":
   var tx = TodoItem(checked: false, title: slint"hello")
