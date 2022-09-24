@@ -2,13 +2,15 @@
   Wraps functions/types for slint
 ]##
 
+import std/options
+
 {.pragma: slintHeader header: "slint.h", nodecl.}
 
 type
   ComponentHandle*[T] {.slintHeader, importcpp: "slint::ComponentHandle".} = object
     ## Handle to a component in the slint application. Only used for the main applicatino
     
-  WindowRef* {.slintHeader, importcpp: "slint::Window&".} = object
+  WindowRef* {.slintHeader, byref, importcpp: "slint::Window&".} = object
     ## Reference to a window
 
   Size*[T] {.slintHeader, importcpp: "slint::Size<'*0>".} = object
@@ -28,10 +30,19 @@ type
   Color* {.slintHeader, importcpp: "slint::Color".} = object
     ## Represents an RGBA color
 
+  VectorModel*[T] {.slintHeader, byref, importcpp: "std::shared_ptr<slint::VectorModel<'0>>".} = object
+    ## Acts like an array in slint. Must be initialised manually
+    # I imported it with the std::shared_ptr since it is usually used with it
+
+  Model*[T] {.slintHeader, byref, importcpp: "std::shared_ptr<slint::Model<'0>>".} = object
+
+  Optional[T] {.bycopy, header: "<optional>", importcpp: "std::optional".} = object
+    
 using comp: ComponentHandle
 using window: WindowRef
 using str: SlintString
 using color: Color
+using model: Model
 
 #
 # Window
@@ -51,6 +62,9 @@ proc `size=`*(window; size: LogicalSize) {.slintHeader, importcpp: "#.set_size(@
 #
 # Shared string
 #
+
+proc `=copy`(str: var SlintString, other: SlintString) = discard
+proc `=destroy`(str: var SlintString) = discard
 
 proc initSlintString*(data: cstring): SlintString {.slintHeader, importcpp: "slint::SharedString(@)", constructor.}
   ## Creates a new string to use with slint
@@ -80,6 +94,8 @@ proc endsWith*(str; suffix: cstring): bool {.slintHeader, importcpp: "#.ends_wit
 
 proc assign*(str: var SlintString, newString: cstring) {.slintHeader, importcpp: "# = @".}
 
+func `$`*(str): string {.inline.} = $str.data
+
 proc `==`*(str; other: cstring): bool {.inline.} =
   str == slint(other)
 
@@ -101,3 +117,32 @@ proc green(color): byte {.slintHeader, importcpp: "#.green()".}
 proc blue(color): byte {.slintHeader, importcpp: "#.blue()".}
 proc alpha(color): byte {.slintHeader, importcpp: "#.alpha()".}
 
+#
+# Optional
+#
+
+proc isSome(o: Optional): bool {.header: "<optional>", importcpp: "#.has_value()".}
+proc get[T](o: Optional[T]): T {.header: "<optional>", importcpp: "*#".}
+
+#
+# Model
+#
+
+func newVectorModel*[T](): VectorModel[T] {.slintHeader, importcpp: "std::make_shared<slint::VectorModel<'*0>>()".}
+  ## Initialises a new model
+
+func len*(model: Model | VectorModel): cint {.slintHeader, importcpp: "#->row_count()".}
+func rawget[T](model: Model[T] | VectorModel[T], i: cint): Optional[T] {.slintHeader, importcpp: "#->row_data(@)".}
+
+func get*[T](model: Model[T] | VectorModel[T]; i: cint): Option[T] =
+  ## Gets the item from the model at index `i`. If it doesn't exist then returns `none(T)`
+  var item = model.rawget(i)
+  if item.isSome:
+    result = some item.get()
+    
+func `[]`*[T](model: Model[T], i: cint): T =
+  ## Gets the item from the moedl at index `i`. Throws index defect if out of range
+  rangeCheck i < model.len
+  result = model.rawget(i).get()
+
+func add*[T](model: var VectorModel[T], item: T) {.slintHeader, importcpp: "#->push_back(@)".}

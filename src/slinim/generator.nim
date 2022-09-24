@@ -119,12 +119,7 @@ template importSlint*(slint: static[string], module: untyped): untyped =
     static:
       echo nimPath
       echo headerPath
-    # TODO: Only rebuild if updated
-    # Build the header file if needed
-    {.hint: "Building header file...".}
-    echo staticExec("slint-compiler -o " & headerPath & " " & slintPath)
-    # Rebuild nim module if it doesn't exist or the header file is newer
     {.hint: "Building Nim bindings...".}
-    echo staticExec(fmt"slinim " & headerPath & " " & nimPath)
+    echo staticExec(fmt"slinim " & slintPath & " " & nimPath)
 
   import module

@@ -60,4 +60,3 @@ jobs:
       env:
         QT_QPA_PLATFORM: minimal
       run: nimble --gc:${{ matrix.gc }} test
-

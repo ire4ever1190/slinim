@@ -11,6 +11,10 @@ struct TodoItem := {
 
 MainWindow := Window {
 		property <int> someNum: 9;
+		property <TodoItem> main: {
+			title: "Finish this library",
+			checked: false
+		};
     preferred-width: 400px;
     preferred-height: 600px;
     callback todo-added(string);

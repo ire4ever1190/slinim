@@ -54,6 +54,7 @@ suite "Todo App":
 
   test "Find properties":
     let expected = @[
+      initProperty("main", initStructureType("TodoItem")),
       initProperty("someNum", Int),
       initProperty("todo_model", initModelType(initStructureType("TodoItem")))
     ]

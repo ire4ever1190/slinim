@@ -87,7 +87,7 @@ func `$`*(x: SlintType): string =
   of Bool: "bool"
   of String: "SlintString"
   of Model:
-    "seq[" & $x.inner & "]"
+    "Model[" & $x.inner & "]"
   of Structure:
     x.name
   else:
