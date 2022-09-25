@@ -47,3 +47,4 @@ suite "Model":
       model[0] == 1
       model[1] == 2
       model[2] == 3
+

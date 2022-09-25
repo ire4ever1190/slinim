@@ -18,6 +18,7 @@ type
 
   SlintKind* = enum
     ## Different kind of types in slint
+    Void
     Int
     Float
     Bool
@@ -50,6 +51,7 @@ type
   Callback* = object
     ## A callback that can be handled in the code
     name*: string
+    returnType*: SlintType
     params*: seq[SlintType]
 
 
@@ -82,6 +84,7 @@ const
 
 func `$`*(x: SlintType): string =
   case x.kind:
+  of Void: "void"
   of Int: "cint"
   of Float: "cfloat"
   of Bool: "bool"
@@ -161,10 +164,11 @@ func initProperty*(name: string, kind: string): Property =
   result.kind = parseSlintType(kind)
   
 
-func initCallback*(name: string, params: seq[SlintType] = @[]): Callback =
+func initCallback*(name: string, params: seq[SlintType] = @[], returnType = initType(Void)): Callback =
   ## Creates a new callback
   result.name = name
   result.params = params
+  result.returnType = returnType
 
 func initStruct*(name: string, properties: seq[Property]): SlintStruct = 
   ## Creates a new struct
@@ -182,6 +186,7 @@ proc parseHeader*(file: string): SlintFile =
     line: string
     state = FindingStruct
     foundCallbacks: Table[string, Callback]
+    rootPrefix: string # What variables are prefixed with
     
   # Parse the file
   while strm.readLine(line):
@@ -239,22 +244,29 @@ proc parseHeader*(file: string): SlintFile =
         # Sucessfully parsed getter
         result.root.properties &= initProperty(ident, kind)
       elif strippedLine.scanf("template<typename Functor> inline auto on_$w", callbackName):
-        result.root.callbacks &= foundCallbacks[callbackName]
+        var callback = foundCallbacks[rootPrefix & callbackName]
+        # Remove the prefix which was found after we parsed all the callbacks
+        callback.name.removePrefix(rootPrefix)
+        result.root.callbacks &= callback
     of InClassPrivate:
       # In the private section of the root. This is the only part that has type info
       # for callbacks so we need to get them from here
       let strippedLine = line.strip()
-      var params, callbackName: string
+      var params, callbackName, returnType: string
+      var prefix: string
+      
       if strippedLine == "public:":
         state = InClassPublic
         continue
-      elif strippedLine.scanf("slint::private_api::Callback<void($*)> root_1_$w", params, callbackName):
+      elif strippedLine.scanf("slint::private_api::Callback<$*($*)> $w", returnType, params, callbackName):
         # Found call back, get properties then add to found list
-        var callback = Callback(name: callbackName)
+        var callback = Callback(name: callbackName, returnType: parseSlintType(returnType))
         for param in params.split(", "):
           if param != "":
             callback.params &= parseSlintType(param)
         foundCallbacks[callbackName] = callback
+      elif strippedLine.scanf("slint::cbindgen_private::WindowItem $w", prefix):
+        rootPrefix = prefix & "_"
     of IgnoringClass:
       # Not particularrly trying to find anything, we can safely ignore
       if line == classEndToken:

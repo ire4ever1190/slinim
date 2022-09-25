@@ -30,11 +30,11 @@ type
   Color* {.slintHeader, importcpp: "slint::Color".} = object
     ## Represents an RGBA color
 
-  VectorModel*[T] {.slintHeader, byref, importcpp: "std::shared_ptr<slint::VectorModel<'0>>".} = object
+  Model*[T] {.slintHeader, bycopy, importcpp: "std::shared_ptr<slint::Model<'0>>".} = object
+  
+  VectorModel*[T] {.slintHeader, bycopy, importcpp: "std::shared_ptr<slint::VectorModel<'0>>".} = object
     ## Acts like an array in slint. Must be initialised manually
     # I imported it with the std::shared_ptr since it is usually used with it
-
-  Model*[T] {.slintHeader, byref, importcpp: "std::shared_ptr<slint::Model<'0>>".} = object
 
   Optional[T] {.bycopy, header: "<optional>", importcpp: "std::optional".} = object
     

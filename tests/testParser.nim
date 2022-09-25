@@ -85,3 +85,10 @@ suite "Todo App":
         initProperty("title", String),
       ]
     )
+
+suite "Extras":
+  let app = parseHeader("callback.h")
+  test "Callback with return type":
+    check app.root.callbacks == @[
+      initCallback("hello", @[initType(Int)], initType(String))
+    ]

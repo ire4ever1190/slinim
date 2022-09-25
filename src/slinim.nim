@@ -19,7 +19,8 @@ when isMainModule:
     strutils,
     streams,
     sha1,
-    os
+    os,
+    strformat
   ]
   # Setup argument parser
   var argParser = ArgumentParser(programName: "slinim", fullName: "Slinim",
@@ -58,7 +59,8 @@ when isMainModule:
     echo bindings
   elif outputFile == "tmp":
     let outputFile = getTempDir() / "slinim_" & $SecureHash(hash.finalize()) & ".nim"
+    let nimFile = slintFile.replace(".slint", ".nim")
     outputFile.writeFile(bindings)
-    echo outputFile
+    nimFile.writeFile(fmt"""include "{outputFile}" """)
   else:
     outputFile.writeFile(bindings)

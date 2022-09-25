@@ -7,7 +7,8 @@ import std/[
   osproc,
   macros,
   sequtils,
-  strutils
+  strutils,
+  sha1
 ]
 
 template lambda*(body: untyped): proc () {.cdecl.} =
@@ -32,10 +33,13 @@ func generate*(callback: Callback, outFile: var string) =
   let
     procName = fmt"on_{callback.name}"
     closureHandler = fmt"handler_{callback.name}"
+    returnType = if callback.returnType.kind == Model:
+        $callback.returnType & " | " & replace($callback.returnType, "Model[", "VectorModel[")
+      else: $callback.returnType
     
   # Add functions to take both normal proc and a closure
   outFile &= fmt"""
-func {procName}*(comp; x: proc ({params}) {{.cdecl.}}) {{.appHeader, importcpp: "#->on_{callback.name}(@)"}}
+func {procName}*(comp; x: proc ({params}): {returnType} {{.cdecl.}}) {{.appHeader, importcpp: "#->on_{callback.name}(@)"}}
 """
 
 func generate*(property: Property, outFile: var string) =
@@ -52,6 +56,13 @@ proc {property.name}*(comp): {kindStr} {{.inline.}} = comp.{getter}()
 proc {setter}*(comp; value: {kindStr}) {{.appHeader, importcpp: "#->{setter}(@)".}}
 proc `{property.name}=`*(comp; value: {kindStr}) {{.inline.}} = comp.{setter}(value)
 """
+  if property.kind.kind == Model:
+    # Allow the setter to take a VectorModel
+    let vecKind = kindStr.replace("Model[", "VectorModel[")
+    outFile &= fmt"""
+proc {setter}*(comp; value: {vecKind}) {{.appHeader, importcpp: "#->{setter}(@)".}}
+proc `{property.name}=`*(comp; value: {vecKind}) {{.inline.}} = comp.{setter}(value)
+"""    
 
 func generate*(struct: SlintStruct, outFile: var string) =
   ## Generate the custom struct as a Nim object
@@ -111,8 +122,9 @@ macro importSlint*(slint: static[string]): untyped =
   let (path, fileName, ext) = slint.splitFile()
   let
     headerPath = getProjectPath() / fileName & ".h"
+    nimPath = getProjectPath() / fileName & ".nim"
     slintPath = getProjectPath() / slint
   {.hint: "Building Nim bindings...".}
-  let modulePath = staticExec(fmt"slinim " & slintPath & " tmp")
+  discard staticExec(fmt"slinim {slintPath} tmp")
   result = quote do:
-    import `modulePath`
+    import `nimPath`
