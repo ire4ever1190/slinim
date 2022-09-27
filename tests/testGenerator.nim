@@ -9,6 +9,8 @@ test "Making todo":
   var tx = TodoItem(checked: false, title: slint"hello")
   check tx.checked == false
   check tx.title == "hello"
+
+var called = false
   
 proc main() = 
   block:
@@ -48,5 +50,17 @@ proc main() =
           title: slint"Implement the .slint file",
           checked: true
         )
+
+    test "Normal handler":
+      app.onPopUpConfirmed(proc () = called = true)
+      app.popUpConfirmed()
+      check called
+
+    test "Closure handler":
+      var l = 0
+      app.onPopUpConfirmed() do ():
+        l += 1
+      app.popUpConfirmed()
+      check l == 1
     app.hide()
 main()

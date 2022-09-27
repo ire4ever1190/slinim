@@ -8,9 +8,12 @@ import std/options
 
 type
   ComponentHandle*[T] {.slintHeader, importcpp: "slint::ComponentHandle".} = object
-    ## Handle to a component in the slint application. Only used for the main applicatino
+    ## Handle to a component in the slint application. Only used for the main application
+
+  ComponentWeakHandle*[T] {.slintHeader, importcpp: "slint::ComponentHandle".} = object
+    ## Weak reference to a component
     
-  WindowRef* {.slintHeader, byref, importcpp: "slint::Window&".} = object
+  WindowRef* {.slintHeader, importcpp: "slint::Window&".} = object
     ## Reference to a window
 
   Size*[T] {.slintHeader, importcpp: "slint::Size<'*0>".} = object
@@ -30,19 +33,43 @@ type
   Color* {.slintHeader, importcpp: "slint::Color".} = object
     ## Represents an RGBA color
 
-  Model*[T] {.slintHeader, bycopy, importcpp: "std::shared_ptr<slint::Model<'0>>".} = object
+  Model*[T] {.slintHeader, importcpp: "std::shared_ptr<slint::Model<'0>>".} = object
   
-  VectorModel*[T] {.slintHeader, bycopy, importcpp: "std::shared_ptr<slint::VectorModel<'0>>".} = object
+  VectorModel*[T] {.slintHeader, importcpp: "std::shared_ptr<slint::VectorModel<'0>>".} = object
     ## Acts like an array in slint. Must be initialised manually
     # I imported it with the std::shared_ptr since it is usually used with it
 
-  Optional[T] {.bycopy, header: "<optional>", importcpp: "std::optional".} = object
+  Optional[T] {.header: "<optional>", importcpp: "std::optional".} = object
+
+  Image* {.slintHeader, importcpp: "slint::Image".} = object
+  
     
 using comp: ComponentHandle
 using window: WindowRef
 using str: SlintString
 using color: Color
 using model: Model
+
+#
+# Optional
+#
+
+proc isSome(o: Optional): bool {.header: "<optional>", importcpp: "#.has_value()".}
+proc get[T](o: Optional[T]): T {.header: "<optional>", importcpp: "*#".}
+
+#
+# Component Handle
+#
+
+proc weakHandle[T](c: ComponentHandle[T]): ComponentWeakHandle[T] {.slintHeader, importcpp: "ComponentWeakHandle(@)".}
+  ## Creates a new weak handle from an existing handle
+
+proc rawLock[T](c: ComponentWeakHandle[T]): Optional[ComponentHandle[T]] {.slintHeader, importcpp: "#.lock()".}
+proc lock[T](c: ComponentWeakHandle): Option[ComponentHandle[T]] =
+  ## Gets a strong handle from weak. Is `none()` if the component the weak handle points to still exists
+  let handle = c.rawLock()
+  if handle.isSome():
+    result = some handle
 
 #
 # Window
@@ -118,13 +145,6 @@ proc blue(color): byte {.slintHeader, importcpp: "#.blue()".}
 proc alpha(color): byte {.slintHeader, importcpp: "#.alpha()".}
 
 #
-# Optional
-#
-
-proc isSome(o: Optional): bool {.header: "<optional>", importcpp: "#.has_value()".}
-proc get[T](o: Optional[T]): T {.header: "<optional>", importcpp: "*#".}
-
-#
 # Model
 #
 
@@ -176,3 +196,10 @@ func contains*[T](model: Model[T], looking: T): bool =
   for item in model:
     if item == looking:
       return true
+
+#
+# Image
+#
+
+proc initImage*(path: SlintString): Image {.importcpp: "slint::Image::load_from_path(@)".}
+  

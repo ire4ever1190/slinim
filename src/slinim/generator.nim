@@ -24,22 +24,35 @@ func generate*(callback: Callback, outFile: var string) =
   var 
     i = 0
     params = ""
+    lambdaParams = ""
+    lambdaCall = ""
   while i < callback.params.len:
+  
     if i > 0:
       params &= ", "
-    params &= char('a'.ord + i) & ": " & $callback.params[i]
+      lambdaParams &= ", "
+    else:
+      lambdaCall &= ", "
+    let paramName = 'x' & $i
+    params &= paramName & ": " & $callback.params[i]
+    lambdaParams &= "auto " & paramName
+    lambdaCall &= paramName
     inc i
   # Stores common strings
   let
-    procName = fmt"on_{callback.name}"
-    closureHandler = fmt"handler_{callback.name}"
     returnType = if callback.returnType.kind == Model:
         $callback.returnType & " | " & replace($callback.returnType, "Model[", "VectorModel[")
       else: $callback.returnType
-    
+  # Make list of parameters for closure lambda
   # Add functions to take both normal proc and a closure
+  # To get closures working I did something a lil hacky
+  # I make a lambda which gets a reference to the closure information, then calls the proc stored in the closure
+  # Seems to work well, and means less weird magic needed
+  # TODO: Support returns in closures
   outFile &= fmt"""
-func {procName}*(comp; x: proc ({params}): {returnType} {{.cdecl.}}) {{.appHeader, importcpp: "#->on_{callback.name}(@)"}}
+func on_{callback.name}*(comp; x: proc ({params}): {returnType} {{.cdecl.}}) {{.appHeader, importcpp: "#->on_{callback.name}(@)".}}
+func on_{callback.name}*(comp; x: proc ({params}): {returnType} {{.closure.}}) {{.appHeader, importcpp: "#->on_{callback.name}([&]({lambdaParams}) {{auto& x = #; x.ClP_0(x.ClE_0{lambdaCall});}})".}}
+proc {callback.name}*(comp; {params}): {returnType} {{.appHeader, importcpp: "#->invoke_{callback.name}(@)".}}
 """
 
 func generate*(property: Property, outFile: var string) =
