@@ -62,5 +62,6 @@ proc main() =
         l += 1
       app.popUpConfirmed()
       check l == 1
+
     app.hide()
 main()

@@ -4,11 +4,8 @@ import std/[
   os,
   strformat,
   times,
-  osproc,
   macros,
-  sequtils,
   strutils,
-  sha1
 ]
 
 template lambda*(body: untyped): proc () {.cdecl.} =
@@ -31,12 +28,11 @@ func generate*(callback: Callback, outFile: var string) =
     if i > 0:
       params &= ", "
       lambdaParams &= ", "
-    else:
-      lambdaCall &= ", "
     let paramName = 'x' & $i
     params &= paramName & ": " & $callback.params[i]
-    lambdaParams &= "auto " & paramName
+    lambdaParams &= "auto& " & paramName
     lambdaCall &= paramName
+    lambdaCall &= ", "
     inc i
   # Stores common strings
   let
@@ -51,7 +47,7 @@ func generate*(callback: Callback, outFile: var string) =
   # TODO: Support returns in closures
   outFile &= fmt"""
 func on_{callback.name}*(comp; x: proc ({params}): {returnType} {{.cdecl.}}) {{.appHeader, importcpp: "#->on_{callback.name}(@)".}}
-func on_{callback.name}*(comp; x: proc ({params}): {returnType} {{.closure.}}) {{.appHeader, importcpp: "#->on_{callback.name}([&]({lambdaParams}) {{auto& x = #; x.ClP_0(x.ClE_0{lambdaCall});}})".}}
+func on_{callback.name}*(comp; x: proc ({params}): {returnType} {{.closure.}}) {{.appHeader, importcpp: "#->on_{callback.name}([&]({lambdaParams}) {{auto&x = #; return x.ClP_0({lambdaCall}x.ClE_0);}})".}}
 proc {callback.name}*(comp; {params}): {returnType} {{.appHeader, importcpp: "#->invoke_{callback.name}(@)".}}
 """
 

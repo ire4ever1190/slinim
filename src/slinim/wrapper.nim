@@ -10,7 +10,7 @@ type
   ComponentHandle*[T] {.slintHeader, importcpp: "slint::ComponentHandle".} = object
     ## Handle to a component in the slint application. Only used for the main application
 
-  ComponentWeakHandle*[T] {.slintHeader, importcpp: "slint::ComponentHandle".} = object
+  ComponentWeakHandle*[T] {.slintHeader, importcpp: "slint::ComponentWeakHandle".} = object
     ## Weak reference to a component
     
   WindowRef* {.slintHeader, importcpp: "slint::Window&".} = object
@@ -39,9 +39,23 @@ type
     ## Acts like an array in slint. Must be initialised manually
     # I imported it with the std::shared_ptr since it is usually used with it
 
+  AnyModel*[T] = Model[T] or VectorModel[T]
+    ## Used to show that a parameter can be any model type
+
   Optional[T] {.header: "<optional>", importcpp: "std::optional".} = object
 
   Image* {.slintHeader, importcpp: "slint::Image".} = object
+
+# Enums
+type
+  CloseRequestResponse* {.slintHeader, importcpp: "slint::CloseRequestResponse".} = enum
+    ## Choose whether to allow the user to close the window when they request to close it
+    ##
+    ## * **HideWindow**: The window will be hidden (default)
+    ## * **KeepWindowShown**: The close request is rejected and the window kept open
+    HideWindow
+    KeepWindowShown
+
   
     
 using comp: ComponentHandle
@@ -61,15 +75,26 @@ proc get[T](o: Optional[T]): T {.header: "<optional>", importcpp: "*#".}
 # Component Handle
 #
 
-proc weakHandle[T](c: ComponentHandle[T]): ComponentWeakHandle[T] {.slintHeader, importcpp: "ComponentWeakHandle(@)".}
+proc initWeakHandle*[T](c: ComponentHandle[T]): ComponentWeakHandle[T] {.slintHeader, importcpp: "slint::ComponentWeakHandle(@)".}
   ## Creates a new weak handle from an existing handle
 
 proc rawLock[T](c: ComponentWeakHandle[T]): Optional[ComponentHandle[T]] {.slintHeader, importcpp: "#.lock()".}
-proc lock[T](c: ComponentWeakHandle): Option[ComponentHandle[T]] =
-  ## Gets a strong handle from weak. Is `none()` if the component the weak handle points to still exists
-  let handle = c.rawLock()
-  if handle.isSome():
-    result = some handle
+
+when false:
+  # This has problems since it can't initialise the ComponentHandle type
+  proc lock*[T](c: ComponentWeakHandle[T]): Option[ComponentHandle[T]] {.noinit.} =
+    ## Gets a strong handle from weak. Is `none()` if the component the weak handle points to still exists
+    let handle = c.rawLock()
+    if handle.isSome():
+      return some handle.get()
+
+template withLock*(c: ComponentWeakHandle, handleName, body: untyped) =
+  ## Tries to get lock on handle. Runs body if successfully gets lock
+  bind rawLock
+  let lockOpt = rawLock(c)
+  if lockOpt.isSome():
+    let handleName {.inject.} = lockOpt.get() 
+    body
 
 #
 # Window
@@ -85,6 +110,10 @@ proc `size=`*(window; size: PhysicalSize) {.slintHeader, importcpp: "#.set_size(
   ## Resizes the window to the specified size on the screen, in logical pixels and excluding a window frame (if present). 
 proc `size=`*(window; size: LogicalSize) {.slintHeader, importcpp: "#.set_size(@)".}
   ## Resizes the window to the specified size on the screen, in logical pixels and excluding a window frame (if present). 
+
+proc onCloseRequested*(window; handler: proc (): CloseRequestResponse {.cdecl.}) {.slintHeader, importcpp: "#.on_close_requested(@)".}
+proc onCloseRequested*(window; handler: proc (): CloseRequestResponse {.closure.}) {.slintHeader, importcpp: "#.on_close_requested([&](){auto&x = #; return x.ClP_0(x.ClE_0);})".}
+
 
 #
 # Shared string
@@ -151,24 +180,24 @@ proc alpha(color): byte {.slintHeader, importcpp: "#.alpha()".}
 func newVectorModel*[T](): VectorModel[T] {.slintHeader, importcpp: "std::make_shared<slint::VectorModel<'*0>>()".}
   ## Initialises a new model
 
-func len*(model: Model | VectorModel): cint {.slintHeader, importcpp: "#->row_count()".}
+func len*(model: AnyModel): cint {.slintHeader, importcpp: "#->row_count()".}
   ## Returns the number of items in the model
   
-func rawget[T](model: Model[T] | VectorModel[T], i: cint): Optional[T] {.slintHeader, importcpp: "#->row_data(@)".}
+func rawget[T](model: AnyModel[T], i: cint): Optional[T] {.slintHeader, importcpp: "#->row_data(@)".}
 
-func get*[T](model: Model[T] | VectorModel[T]; i: cint): Option[T] =
+func get*[T](model: AnyModel[T]; i: cint): Option[T] =
   ## Gets the item from the model at index `i`. If it doesn't exist then returns `none(T)`
   # Converts from C++ Optional[T] to Nim Option[T]
   var item = model.rawget(i)
   if item.isSome:
     result = some item.get()
     
-func `[]`*[T](model: Model[T] | VectorModel[T], i: cint): T =
+func `[]`*[T](model: AnyModel[T], i: cint): T =
   ## Gets the item from the moedl at index `i`. Throws index defect if out of range
   rangeCheck i < model.len
   result = model.rawget(i).get()
 
-func `[]=`*[T](model: var Model[T] | var VectorModel[T], i: cint, item: T) {.slintHeader, importcpp: "#->set_row_data(@)".}
+func `[]=`*[T](model: var AnyModel[T], i: cint, item: T) {.slintHeader, importcpp: "#->set_row_data(@)".}
   ## Sets the item at index `i` to `item`
 
 func delete*(model: var VectorModel, i: cint) {.slintHeader, importcpp: "#->erase(@)".}
@@ -186,12 +215,12 @@ func newVectorModel*[T](items: openArray[T]): VectorModel[T] =
   for item in items:
     result &= item
 
-iterator items*[T](model: Model[T]): T =
+iterator items*[T](model: AnyModel[T]): T =
   ## Iterates through items in the model
   for i in 0..<model.len:
     yield model[i]
 
-func contains*[T](model: Model[T], looking: T): bool =
+func contains*[T](model: AnyModel[T], looking: T): bool =
   ## Returns true if item appears in the model
   for item in model:
     if item == looking:
