@@ -125,7 +125,7 @@ proc `=destroy`(str: var SlintString) = discard
 proc initSlintString*(data: cstring): SlintString {.slintHeader, importcpp: "slint::SharedString(@)", constructor.}
   ## Creates a new string to use with slint
 
-proc slint*(data: string | cstring): SlintString {.inline.} = initSlintString(data)
+proc slint*(data: string | cstring): SlintString {.inline.} = initSlintString(cstring(data))
 
 proc data*(str): cstring {.slintHeader, importcpp: "#.data()".}
   ## Gets pointer to underlying string data. Only valid for lifetime of `SlintString`
