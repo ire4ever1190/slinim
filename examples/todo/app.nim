@@ -15,7 +15,7 @@ proc main() =
     TodoItem(checked: false, title: slint"Profit")
   ])
   let demo = MainWindow.create()
-  var w = initWeakHandle(demo)
+  var w = initWeakHandle(demo)   
   demo.todoModel = todoModel
 
   demo.onTodoAdded() do (s: SlintString):
