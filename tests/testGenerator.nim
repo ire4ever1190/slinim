@@ -62,10 +62,10 @@ proc main() =
       check l == 1
 
     test "Closure handler with parameter":
-      var item = slint"Not hello world"
+      var called = false
       app.onTodoAdded() do (s: SlintString):
-        item = s
+        called = true
       app.todoAdded(slint"Hello world")
-      check item == "Hello world"
+      check called
     app.hide()
 main()

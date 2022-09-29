@@ -119,7 +119,8 @@ proc onCloseRequested*(window; handler: proc (): CloseRequestResponse {.closure.
 # Shared string
 #
 
-proc `=copy`(str: var SlintString, other: SlintString) = discard
+proc `=copy`(str: var SlintString, other: SlintString) {.importcpp: "# = #".}
+proc `=sink`(dest: var SlintString, other: SlintString) {.importcpp: "# = std::move(#)".}
 proc `=destroy`(str: var SlintString) = discard
 
 proc initSlintString*(data: cstring): SlintString {.slintHeader, importcpp: "slint::SharedString(@)", constructor.}
@@ -151,9 +152,14 @@ proc endsWith*(str; suffix: cstring): bool {.slintHeader, importcpp: "#.ends_wit
 proc assign*(str: var SlintString, newString: cstring) {.slintHeader, importcpp: "# = @".}
 
 func `$`*(str): string {.inline.} = $str.data
+func `==`*(a, b: SlintString): bool {.slintHeader, importcpp: "(# == #)".}
+func `!=`*(a, b: SlintString): bool {.slintHeader, importcpp: "(# != #)".}
 
 proc `==`*(str; other: cstring): bool {.inline.} =
   str == slint(other)
+
+proc `!=`*(str; other: cstring): bool {.inline.} =
+  str != slint(other)
 
 iterator items*(str): char =
   ## Iterates through characters in the string
