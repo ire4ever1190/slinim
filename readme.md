@@ -1,6 +1,8 @@
 
 Allows you to make applications using [slint UI](https://slint-ui.com/)
 
-Currently basic getters/setters work and callbacks (closures not supported atm though).
+See [examples folder](examples/) for examples converted from original slint repo
 
-Not too usable at the moment and API might change
+Currently most of the API is supported, not everything is wrapped though.
+
+API might change

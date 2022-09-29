@@ -1,4 +1,4 @@
-name: Tests
+name: Compile examples
 
 on: 
   push:
@@ -8,7 +8,7 @@ on:
   
 
 jobs:
-  test:
+  examples:
     timeout-minutes: 40
     runs-on: ubuntu-22.04
     strategy:
@@ -17,12 +17,9 @@ jobs:
           - "1.6.0"
           - "stable"
           - "devel"
-        gc: 
-          - "refc"
-          - "orc"
       fail-fast: false
 
-    name: Nim ${{ matrix.nim }} ${{ matrix.gc }}
+    name: Nim ${{ matrix.nim }}
     steps:
     - name: Setup Nim Enviroment
       uses: actions/checkout@master
@@ -60,7 +57,8 @@ jobs:
     - name: Install binding generator
       run: nimble install -y
 
-    - name: Run Tests
+    - name: Compile examples
       env:
         QT_QPA_PLATFORM: minimal
-      run: nimble --gc:${{ matrix.gc }} test
+        EXAMPLES: todo
+      run: for f in $EXAMPLES; do nim cpp examples/$f/app.nim; done

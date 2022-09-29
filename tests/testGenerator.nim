@@ -36,9 +36,7 @@ proc main() =
         title: title,
         checked: true
       )
-      # var tab = initTable[string, TodoItem]()
-      # echo newTodo
-      # tab["test "] = newTodo
+
       app.main = newTodo
       check app.main.title == newTodo.title
 
@@ -62,5 +60,12 @@ proc main() =
         l += 1
       app.popUpConfirmed()
       check l == 1
+
+    test "Closure handler with parameter":
+      var called = false
+      app.onTodoAdded() do (s: SlintString):
+        called = true
+      app.todoAdded(slint"Hello world")
+      check called
     app.hide()
 main()
