@@ -29,6 +29,8 @@ when isMainModule:
                                  author: "Jake Leahy <jake@leahy.dev>")
   argParser.addRequiredArgument(name = "inFile", help = "Input file (.slint UI file")
   argParser.addRequiredArgument(name = "outFile", help = "Nim output file (use - for stdout, tmp for a temporary file (prints path))")
+  argParser.addStoreArgument(shortName="-s", longName="--style", default="fluent", 
+                             help="Specifies the style to use for slint", usageInput="style")
   let args = argParser.parse()
   # Use args to make the bindigns
   let
@@ -36,7 +38,7 @@ when isMainModule:
     outputFile = args["outFile"]
     headerFile = slintFile.replace(".slint", ".h")
   # Create the header file. Also make the vtable inline while we are at it
-  var headerProcess = startProcess("slint-compiler", args = [slintFile, "--style", "fluent"], options = {poStdErrToStdOut, poUsePath})
+  var headerProcess = startProcess("slint-compiler", args = [slintFile, "--style", args["style"]], options = {poStdErrToStdOut, poUsePath})
   var headerFileStream = newFileStream(headerFile, fmWrite)
   # Also generate hash while we are at it
   var hash = newSha1State()
