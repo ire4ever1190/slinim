@@ -30,7 +30,7 @@ type
     ## String type used to interact with slint. Allows copies of the same memory to be passed
     ## around to make the program more efficient
 
-  Color* {.slintHeader, importcpp: "slint::Color".} = object
+  SlintColor* {.slintHeader, importcpp: "slint::Color".} = object
     ## Represents an RGBA color
 
   Model*[T] {.slintHeader, importcpp: "std::shared_ptr<slint::Model<'0>>".} = object
@@ -47,7 +47,7 @@ type
 using comp: ComponentHandle
 using window: WindowRef
 using str: SlintString
-using color: Color
+using color: SlintColor
 using model: Model
 
 #

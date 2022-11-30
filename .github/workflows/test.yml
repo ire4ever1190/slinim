@@ -1,7 +1,10 @@
 name: Tests
 
-on: [push, pull_request]
-  
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
 
 jobs:
   test:
@@ -44,7 +47,7 @@ jobs:
 
     - name: Install slint
       env:
-        SLINT_VERSION: 0.3.0
+        SLINT_VERSION: 0.3.2
       run: |
         wget https://github.com/slint-ui/slint/releases/download/v$SLINT_VERSION/Slint-cpp-$SLINT_VERSION-Linux-x86_64.tar.gz -O slint.tar.gz
         tar -xzf slint.tar.gz
@@ -59,4 +62,7 @@ jobs:
     - name: Run Tests
       env:
         QT_QPA_PLATFORM: minimal
-      run: nimble --gc:${{ matrix.gc }} test
+      run: |
+        nimble --gc:${{ matrix.gc }} test
+        nimble doc --project --gc:${{ matrix.gc }} src/slinim.nim
+  

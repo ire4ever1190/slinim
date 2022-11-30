@@ -22,8 +22,8 @@ type
     Int
     Float
     Bool
-    String
-    Color
+    String = "SlintString"
+    Color = "SlintColor"
     Brush
     Image
     # Lengths are both floats
@@ -80,7 +80,6 @@ type
 
 const
   classEndToken = "};"
-  root_prefix = "root_1"
 
 func `$`*(x: SlintType): string =
   case x.kind:
@@ -88,7 +87,6 @@ func `$`*(x: SlintType): string =
   of Int: "cint"
   of Float: "cfloat"
   of Bool: "bool"
-  of String: "SlintString"
   of Model:
     "Model[" & $x.inner & "]"
   of Structure:

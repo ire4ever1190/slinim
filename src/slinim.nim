@@ -51,7 +51,8 @@ when isMainModule:
       headerFileStream.writeLine line
   
   close headerFileStream
-  assert headerProcess.waitForExit() == 0
+  if headerProcess.waitForExit() != 0:
+    echo headerProcess.outputStream().readAll()
   # Make bindings
   let 
     info = parseHeader(headerFile)
@@ -71,3 +72,6 @@ when isMainModule:
       quit 1
   else:
     outputFile.writeFile(bindings)
+else:
+  when not defined(cpp):
+    {.error: "Slinim requires C++ backend".}
