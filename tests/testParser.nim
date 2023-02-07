@@ -77,14 +77,13 @@ suite "Todo App":
       check callback in app.root.callbacks
 
   test "Find TodoItem struct":
-    check app.structs.len == 1
-    check app.structs[0] == initStruct(
+    check initStruct(
       "TodoItem",
       @[
         initProperty("checked", Bool),
         initProperty("title", String),
       ]
-    )
+    ) in app.structs
 
 suite "Extras":
   let app = parseHeader("callback.h")

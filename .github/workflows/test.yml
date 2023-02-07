@@ -47,7 +47,7 @@ jobs:
 
     - name: Install slint
       env:
-        SLINT_VERSION: 0.3.2
+        SLINT_VERSION: 0.3.4
       run: |
         wget https://github.com/slint-ui/slint/releases/download/v$SLINT_VERSION/Slint-cpp-$SLINT_VERSION-Linux-x86_64.tar.gz -O slint.tar.gz
         tar -xzf slint.tar.gz

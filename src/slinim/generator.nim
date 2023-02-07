@@ -138,6 +138,6 @@ macro importSlint*(slint: static[string], style="material"): untyped =
     nimPath = getProjectPath() / fileName & ".nim"
     slintPath = getProjectPath() / slint
   {.hint: "Building Nim bindings...".}
-  echo  staticExec(fmt"slinim --style={style} {slintPath} tmp")
+  let bindingPath =  staticExec(fmt"slinim --style={style} {slintPath} tmp")
   result = quote do:
-    import `nimPath`
+    import `bindingPath`

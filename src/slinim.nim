@@ -64,6 +64,7 @@ when isMainModule:
     let outputFile = getTempDir() / "slinim_" & $SecureHash(hash.finalize()) & ".nim"
     let nimFile = slintFile.replace(".slint", ".nim")
     outputFile.writeFile(bindings)
+    echo outputFile
     # Check we aren't overwriting anything important first
     if not nimFile.fileExists() or nimFile.getFileInfo().size <= 75:
       nimFile.writeFile(fmt"""include "{outputFile}" """)
